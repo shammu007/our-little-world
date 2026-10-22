@@ -4,6 +4,7 @@ import { FRAME, layoutGallery, type FramePlacement } from '../lib/layout'
 import { useStore } from '../state/store'
 import { registerInteractable } from './interactions'
 import { washTexture } from './textures'
+import { isTouchDevice } from '../lib/device'
 
 const cache = new Map<string, Promise<THREE.Texture>>()
 
@@ -12,15 +13,68 @@ function missingTexture() {
   c.width = 256
   c.height = 192
   const g = c.getContext('2d')!
-  g.fillStyle = '#EEEBE5'
+  g.fillStyle = '#E9DCCB'
   g.fillRect(0, 0, 256, 192)
-  g.fillStyle = '#A8A39A'
-  g.font = '600 18px Nunito, sans-serif'
+  g.fillStyle = '#8A7058'
+  g.font = '600 17px Nunito, sans-serif'
   g.textAlign = 'center'
-  g.fillText('Photo unavailable', 128, 100)
+  g.fillText('This photo could not load', 128, 92)
+  g.font = '500 14px Nunito, sans-serif'
+  g.fillText('Try uploading it again', 128, 116)
   const t = new THREE.CanvasTexture(c)
   t.colorSpace = THREE.SRGBColorSpace
   return t
+}
+
+/** Turns a data: URL into a Blob without any network request (so no page policy can block it). */
+function dataUrlToBlob(url: string) {
+  const comma = url.indexOf(',')
+  const head = url.slice(5, comma)
+  const body = url.slice(comma + 1)
+  const type = head.split(';')[0] || 'application/octet-stream'
+  if (!head.includes(';base64')) return new Blob([decodeURIComponent(body)], { type })
+  const bin = atob(body)
+  const bytes = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+  return new Blob([bytes], { type })
+}
+
+function imageElement(src: string): Promise<HTMLImageElement> {
+  return new Promise((res, rej) => {
+    const img = new Image()
+    if (!src.startsWith('data:')) img.crossOrigin = 'anonymous'
+    img.decoding = 'async'
+    img.onload = () => res(img)
+    img.onerror = () => rej(new Error('image failed'))
+    img.src = src
+  })
+}
+
+/** Decodes a photo, trying the most reliable route first and falling back to the others. */
+async function decodePhoto(src: string): Promise<{ source: CanvasImageSource; w: number; h: number; close?: () => void }> {
+  const attempts: (() => Promise<{ source: CanvasImageSource; w: number; h: number; close?: () => void }>)[] = []
+  const viaBitmap = (blob: () => Promise<Blob>) => async () => {
+    const bmp = await createImageBitmap(await blob())
+    return { source: bmp, w: bmp.width, h: bmp.height, close: () => bmp.close() }
+  }
+  const viaImage = async () => {
+    const img = await imageElement(src)
+    return { source: img, w: img.naturalWidth || 800, h: img.naturalHeight || 600 }
+  }
+  const raster = !/^data:image\/svg/.test(src) && !/\.svg(\?|$)/.test(src)
+  if (src.startsWith('data:') && raster && 'createImageBitmap' in window) attempts.push(viaBitmap(async () => dataUrlToBlob(src)))
+  attempts.push(viaImage)
+  if (!src.startsWith('data:') && raster && 'createImageBitmap' in window)
+    attempts.push(viaBitmap(async () => (await fetch(src, { mode: 'cors' })).blob()))
+  let last: unknown
+  for (const attempt of attempts) {
+    try {
+      return await attempt()
+    } catch (e) {
+      last = e
+    }
+  }
+  throw last
 }
 
 /** Loads a photo and downsizes it for the wall (full resolution is only used in the viewer overlay). */
@@ -28,29 +82,24 @@ export function loadWallTexture(src: string, maxSize: number): Promise<THREE.Tex
   const key = `${maxSize}|${src}`
   let p = cache.get(key)
   if (!p) {
-    p = new Promise<THREE.Texture>((resolve) => {
-      const img = new Image()
-      img.crossOrigin = 'anonymous'
-      img.decoding = 'async'
-      img.onload = () => {
-        const w0 = img.naturalWidth || 800
-        const h0 = img.naturalHeight || 600
-        const k = Math.min(1, maxSize / Math.max(w0, h0))
+    p = decodePhoto(src)
+      .then(({ source, w, h, close }) => {
+        const k = Math.min(1, maxSize / Math.max(w, h))
         const c = document.createElement('canvas')
-        c.width = Math.max(2, Math.round(w0 * k))
-        c.height = Math.max(2, Math.round(h0 * k))
-        c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height)
+        c.width = Math.max(2, Math.round(w * k))
+        c.height = Math.max(2, Math.round(h * k))
+        c.getContext('2d')!.drawImage(source, 0, 0, c.width, c.height)
+        close?.()
         const t = new THREE.CanvasTexture(c)
         t.colorSpace = THREE.SRGBColorSpace
         t.anisotropy = 4
-        resolve(t)
-      }
-      img.onerror = () => {
+        return t
+      })
+      .catch((e) => {
+        console.warn('Photo could not load', e)
         cache.delete(key)
-        resolve(missingTexture())
-      }
-      img.src = src
-    })
+        return missingTexture()
+      })
     cache.set(key, p)
   }
   return p
@@ -121,7 +170,7 @@ export function Gallery() {
   return (
     <group>
       {placements.map((f) => (
-        <Frame key={f.photo.id + f.photo.src} f={f} maxTex={low ? 512 : 1024} />
+        <Frame key={f.photo.id + f.photo.src} f={f} maxTex={low ? 512 : isTouchDevice() ? 768 : 1024} />
       ))}
     </group>
   )
