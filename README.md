@@ -1,6 +1,6 @@
 # Our Little World
 
-A small, cozy 3D birthday world for two people. Walk through a sage-green garden to a three-tier cake with 25 candles, read the "happy 25! sweetheart" sign, visit a white gallery hall with framed photos, and answer the riddle at the glowing blue portal to unlock a love letter. Two devices can explore together in real time.
+A small, cozy 3D birthday world for two people. Walk through a bright tulip garden with a stone fountain and a heart tree to a colourful three-tier cake with 25 candles, read the "happy 25! sweetheart" sign, visit a white gallery hall with framed photos, and answer the riddle at the glowing blue portal to unlock a love letter. Two devices can explore together in real time.
 
 Built with React, TypeScript, Vite, React Three Fiber, Drei, Rapier, Zustand and Supabase (anonymous auth, Postgres + RLS, private Storage, Realtime Presence/Broadcast). Deploys to Vercel as a static SPA.
 
@@ -25,7 +25,7 @@ Follow **[docs/SETUP.md](docs/SETUP.md)**: create a Supabase project, run one SQ
 
 | What | Where |
 | --- | --- |
-| Welcome text, sign text, entrance questions, avatar colours | `src/content/content.ts` (public, ships in the bundle) |
+| Welcome text, sign text, floating wish text, entrance questions, avatar colours | `src/content/content.ts` (public, ships in the bundle) |
 | Photos, captions, order, wall | In game: pencil button → **Photos** (owner only) |
 | Portal clue, hint, accepted answers, love letter | In game: pencil button → **Portal & letter** (owner only, stored on the server) |
 | Shared entrance access code | In game: pencil button → **Access code**, or `supabase/setup_codes.sql` |

@@ -9,13 +9,15 @@ import { merge, paint, rng } from './util'
 import { registerInteractable } from './interactions'
 import { CANDLE_COUNT, PEDESTAL_H, TIERS, candlePositions, tierBase } from '../lib/cake'
 
+const SPRINKLES = ['#FF8A3D', '#FF5E8A', '#FFFFFF', '#5BC0F5', '#FFD23F']
+
 function cakeGeometry() {
   const r = rng(25)
   const parts: THREE.BufferGeometry[] = []
   // stone pedestal
   const ped = new THREE.CylinderGeometry(1.55, 1.7, PEDESTAL_H - 0.06, 28)
   ped.translate(0, (PEDESTAL_H - 0.06) / 2, 0)
-  parts.push(paint(ped, '#E4DED3', 0.02, r))
+  parts.push(paint(ped, '#F3F0EA', 0.02, r))
   const plate = new THREE.CylinderGeometry(1.45, 1.45, 0.06, 40)
   plate.translate(0, PEDESTAL_H - 0.03, 0)
   parts.push(paint(plate, '#FBFAF7'))
@@ -43,12 +45,23 @@ function cakeGeometry() {
       const a = (k / beads) * Math.PI * 2
       const s = new THREE.SphereGeometry(0.05, 8, 6)
       s.translate(Math.cos(a) * t.r, y0 + 0.04, Math.sin(a) * t.r)
-      parts.push(paint(s, '#FFFDF8'))
+      parts.push(paint(s, t.bead))
       if (k % 2 === 0) {
         const s2 = new THREE.SphereGeometry(0.035, 8, 6)
         s2.translate(Math.cos(a) * (t.r - 0.06), y0 + t.h + 0.02, Math.sin(a) * (t.r - 0.06))
-        parts.push(paint(s2, '#FFFDF8'))
+        parts.push(paint(s2, t.bead))
       }
+    }
+    // candy dots on the sides
+    const dots = Math.round(t.r * 22)
+    for (let k = 0; k < dots; k++) {
+      const a = (k / dots) * Math.PI * 2 + i * 0.7 + r() * 0.2
+      const y = y0 + 0.16 + r() * (t.h - 0.45)
+      const d = new THREE.SphereGeometry(0.038, 6, 4)
+      d.scale(0.6, 1, 1)
+      d.rotateY(-a)
+      d.translate(Math.cos(a) * (t.r + 0.005), y, Math.sin(a) * (t.r + 0.005))
+      parts.push(paint(d, SPRINKLES[(k + i) % SPRINKLES.length]))
     }
   })
   // berries and little leaves on top
@@ -57,12 +70,12 @@ function cakeGeometry() {
     const a = (k / 7) * Math.PI * 2 + 0.3
     const b = new THREE.SphereGeometry(0.06, 10, 8)
     b.translate(Math.cos(a) * 0.45, topY + 0.04, Math.sin(a) * 0.45)
-    parts.push(paint(b, k % 2 ? '#B9606A' : '#C9787E'))
+    parts.push(paint(b, k % 2 ? '#E0202C' : '#F2394A'))
     const leaf = new THREE.SphereGeometry(0.05, 6, 4)
     leaf.scale(1.6, 0.3, 0.7)
     leaf.rotateY(-a + 0.6)
     leaf.translate(Math.cos(a + 0.22) * 0.46, topY + 0.03, Math.sin(a + 0.22) * 0.46)
-    parts.push(paint(leaf, '#8BA67A'))
+    parts.push(paint(leaf, '#4CAF3C'))
   }
   // a few berries on the lower ledges between candles
   for (const [lvl, rr, n] of [
@@ -73,7 +86,7 @@ function cakeGeometry() {
       const a = ((k + 0.5) / n) * Math.PI * 2 + (lvl - 1) * 0.4
       const b = new THREE.SphereGeometry(0.045, 8, 6)
       b.translate(Math.cos(a) * rr, tierBase(lvl) + 0.03, Math.sin(a) * rr)
-      parts.push(paint(b, '#C9787E'))
+      parts.push(paint(b, '#F2394A'))
     }
   }
   return merge(parts.map((g) => (g.attributes.uv ? (g.deleteAttribute('uv'), g) : g)))
@@ -93,7 +106,7 @@ function softPointsMaterial(color: THREE.ColorRepresentation, additive = true) {
   })
 }
 
-const STICK_COLORS = ['#BFD0C0', '#EBCFCB', '#F2E8D5', '#C7D5E3', '#E2D4E6']
+const STICK_COLORS = ['#FF8FB1', '#7FD3F7', '#FFD45E', '#9BE38B', '#C9A4F5']
 
 function Candles() {
   const positions = useMemo(() => candlePositions(), [])
@@ -221,7 +234,7 @@ function Candles() {
 }
 
 const CONFETTI = 150
-const CONFETTI_COLORS = ['#E9C9C3', '#C9D8C2', '#F1E3BF', '#C8D6E4', '#FFFFFF', '#DCCBE0']
+const CONFETTI_COLORS = ['#FF5E8A', '#5BC0F5', '#FFD23F', '#7ED957', '#FFFFFF', '#C69CF5']
 
 function Confetti() {
   const blowSeq = useStore((s) => s.blowSeq)
@@ -347,6 +360,41 @@ function Sign() {
   )
 }
 
+/** A floating line of text above the cake that always faces the camera. */
+function WishText() {
+  const reduced = useStore((s) => s.settings.reducedMotion)
+  const ref = useRef<THREE.Mesh>(null)
+  const mat = useMemo(() => new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, toneMapped: false, fog: false }), [])
+  useEffect(() => {
+    if (!content.wishText) return
+    let alive = true
+    let tex: THREE.Texture | null = null
+    textTexture(content.wishText, { w: 1600, h: 260, size: 140, color: '#FFFFFF', stroke: '#4A3A6A', sparkles: true }).then((t) => {
+      if (!alive) return t.dispose()
+      tex = t
+      mat.map = t
+      mat.opacity = 1
+      mat.needsUpdate = true
+    })
+    return () => {
+      alive = false
+      tex?.dispose()
+    }
+  }, [mat])
+  useFrame((state) => {
+    const m = ref.current
+    if (!m) return
+    m.quaternion.copy(state.camera.quaternion)
+    m.position.y = 3.75 + (reduced ? 0 : Math.sin(state.clock.elapsedTime * 1.4) * 0.08)
+  })
+  if (!content.wishText) return null
+  return (
+    <mesh ref={ref} material={mat} position={[0, 3.75, 0]} renderOrder={5}>
+      <planeGeometry args={[5.2, 0.85]} />
+    </mesh>
+  )
+}
+
 export function Cake() {
   const geo = useMemo(() => cakeGeometry(), [])
   useEffect(
@@ -368,6 +416,7 @@ export function Cake() {
       <Candles />
       <Confetti />
       <Sign />
+      <WishText />
       <RigidBody type="fixed" colliders={false}>
         <CylinderCollider args={[1.2, 1.75]} position={[0, 1.2, 0]} />
       </RigidBody>

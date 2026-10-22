@@ -2,9 +2,9 @@
 export const CANDLE_COUNT = 25
 export const PEDESTAL_H = 0.5
 export const TIERS = [
-  { r: 1.25, h: 0.7, sponge: '#F4E9DA', drip: '#E7C3BE' },
-  { r: 0.9, h: 0.6, sponge: '#F7EFE4', drip: '#DDB7B8' },
-  { r: 0.55, h: 0.5, sponge: '#F4E9DA', drip: '#E7C3BE' },
+  { r: 1.25, h: 0.7, sponge: '#7CC9F0', drip: '#FF9EC0', bead: '#FFFFFF' },
+  { r: 0.9, h: 0.6, sponge: '#FFD45C', drip: '#FFB3CC', bead: '#FFFFFF' },
+  { r: 0.55, h: 0.5, sponge: '#FF9EC0', drip: '#6B3A22', bead: '#FFE7A8' },
 ]
 export const tierBase = (i: number) => PEDESTAL_H + TIERS.slice(0, i).reduce((s, t) => s + t.h, 0)
 

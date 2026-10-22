@@ -17,6 +17,7 @@ export const content: WorldContent = {
   welcomeLine: 'A tiny garden, a cake, and a few memories. Made just for you.',
   whoPrompt: 'Who is entering our little world?',
   signText: 'happy 25! sweetheart',
+  wishText: 'May your wishes come true!',
   enterButton: 'Step inside',
   roles: {
     me: {

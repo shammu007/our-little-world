@@ -12,10 +12,10 @@ function Sky() {
         side: THREE.BackSide,
         depthWrite: false,
         fog: false,
-        uniforms: { top: { value: new THREE.Color('#B9D3E3') }, horizon: { value: new THREE.Color('#EEF1EA') }, sunDir: { value: SUN_DIR } },
+        uniforms: { top: { value: new THREE.Color('#3D98EC') }, horizon: { value: new THREE.Color('#C9E9FF') }, sunDir: { value: SUN_DIR } },
         vertexShader: `varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
         fragmentShader: `uniform vec3 top; uniform vec3 horizon; uniform vec3 sunDir; varying vec3 vDir;
-          void main(){ float h = clamp(vDir.y, 0.0, 1.0); vec3 c = mix(horizon, top, pow(h, 0.6));
+          void main(){ float h = clamp(vDir.y, 0.0, 1.0); vec3 c = mix(horizon, top, pow(h, 0.5));
           float s = max(dot(normalize(vDir), sunDir), 0.0); c += vec3(1.0,0.95,0.85) * pow(s, 60.0) * 0.6 + vec3(1.0,0.97,0.9) * pow(s, 6.0) * 0.12;
           gl_FragColor = vec4(c, 1.0); }`,
       }),
@@ -46,7 +46,7 @@ function Sky() {
             {[0, 1, 2].map((k) => (
               <mesh key={k} position={[(k - 1) * 1.1, k === 1 ? 0.3 : 0, 0]} scale={[1.2, 0.55, 0.8]}>
                 <icosahedronGeometry args={[1, 1]} />
-                <meshBasicMaterial color={'#FBFBF8'} fog={false} transparent opacity={0.9} />
+                <meshBasicMaterial color={'#FFFFFF'} fog={false} />
               </mesh>
             ))}
           </group>
@@ -61,8 +61,8 @@ export function Lighting() {
   const quality = useStore((s) => s.settings.quality)
   const scene = useThree((s) => s.scene)
   useEffect(() => {
-    scene.fog = new THREE.Fog('#E9EDE4', 45, 135)
-    scene.background = new THREE.Color('#E9EDE4')
+    scene.fog = new THREE.Fog('#CBE7FB', 60, 150)
+    scene.background = new THREE.Color('#CBE7FB')
   }, [scene])
   useEffect(() => {
     if (sun.current) scene.add(sun.current.target)
@@ -81,12 +81,12 @@ export function Lighting() {
   return (
     <>
       <Sky />
-      <hemisphereLight args={['#EEF3F6', '#A9AE8F', 1.35]} />
+      <hemisphereLight args={['#E4F3FF', '#7FBF5A', 1.25]} />
       <ambientLight intensity={0.25} color={'#FFF8EE'} />
       <directionalLight
         ref={sun}
-        color={'#FFF3E2'}
-        intensity={1.9}
+        color={'#FFF8EC'}
+        intensity={2.1}
         castShadow={shadows}
         shadow-mapSize={[2048, 2048]}
         shadow-camera-left={-24}

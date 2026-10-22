@@ -2,22 +2,24 @@ import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 
 export const PALETTE = {
-  grass: '#A7B58F',
-  grassDark: '#93A37C',
-  grassLight: '#B7C3A0',
-  foliage: ['#7F9C6E', '#8CA87A', '#728F65', '#98AE83'],
-  trunk: '#8A6E58',
+  grass: '#5FC03E',
+  grassDark: '#4DAA34',
+  grassLight: '#78D152',
+  foliage: ['#4FA83A', '#5DB846', '#45963A', '#6CC24F'],
+  trunk: '#8A5E3C',
   path: '#DCCFB6',
   pathDark: '#CBBC9F',
-  flower: '#FAF8F2',
-  flowerCenter: '#E9D9A6',
+  flower: '#FFFFFF',
+  flowerCenter: '#F7C844',
+  tulip: '#E8242F',
+  tulipPink: '#F2668B',
   houseOuter: '#FAF6EF',
   houseTrim: '#E2DAD0',
   roof: '#9E8478',
   wall: '#FAFAF8',
   oak: '#D6B88F',
-  hedge: '#7E9770',
-  stone: '#D9D3C7',
+  hedge: '#4E9A3A',
+  stone: '#B9B5AE',
   wood: '#B08E6E',
   portal: '#2E9BFF',
 }
@@ -77,3 +79,24 @@ export function wobble(geo: THREE.BufferGeometry, amount: number, rand: () => nu
 
 export const vertexMat = (opts: THREE.MeshLambertMaterialParameters = {}) =>
   new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, ...opts })
+
+/** A puffy extruded heart, centred on the origin, about `size` tall, facing +z. */
+export function heartGeometry(size: number, depth = 0.35, curveSegments = 10) {
+  const shape = new THREE.Shape()
+  const n = 48
+  for (let i = 0; i <= n; i++) {
+    const t = (i / n) * Math.PI * 2
+    const x = 16 * Math.sin(t) ** 3
+    const y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)
+    if (i === 0) shape.moveTo(x, y)
+    else shape.lineTo(x, y)
+  }
+  const bevel = depth * 14
+  const g = new THREE.ExtrudeGeometry(shape, { depth: depth * 16, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel * 0.8, bevelSegments: 4, curveSegments })
+  g.center()
+  const k = size / 32
+  g.scale(k, k, k)
+  if (g.attributes.uv) g.deleteAttribute('uv')
+  g.computeVertexNormals()
+  return g
+}

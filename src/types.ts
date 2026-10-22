@@ -46,6 +46,8 @@ export interface WorldContent {
   welcomeLine: string
   whoPrompt: string
   signText: string
+  /** Floating line above the cake. Leave empty to hide it. */
+  wishText: string
   roles: Record<Role, RoleConfig>
   /** Demo-mode only: a shared access code checked in the browser. In Supabase mode the code lives (hashed) on the server. */
   demoAccessCode?: string

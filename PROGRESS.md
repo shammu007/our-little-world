@@ -5,8 +5,8 @@ _Last updated: 2026-10-22_
 ## Done and tested
 
 - [x] Vite + React 19 + TypeScript + R3F 9 + Drei + Rapier + Zustand foundation, code-split (welcome screen loads ~77 kB gzip; 3D engine loads in the background)
-- [x] Garden: sage ground, instanced low-poly trees, white flowers, swaying grass, stone path, plaza, benches, lanterns, hedge boundary, entrance gate, sky and distant hills
-- [x] Cake with exactly 25 animated candles (unit-tested), legible "happy 25! sweetheart" sign, blow-out with smoke, restrained confetti, music-box tune, relight
+- [x] Garden (bright cartoon style): vivid grass, red/pink tulips and daisies, tiered stone fountain with flowing water, big red heart tree with floating hearts, white benches with hearts, instanced low-poly trees, stone path, plaza, lanterns, hedge boundary, entrance gate, blue sky and distant hills
+- [x] Colourful cake (blue, yellow, pink tiers, chocolate top) with exactly 25 animated candles (unit-tested), floating "May your wishes come true!" line, legible "happy 25! sweetheart" sign, blow-out with smoke, restrained confetti, music-box tune, relight
 - [x] House with opening door, roof, windows, porch, large hall: matte white walls, light oak floor, bench, rug, plants
 - [x] Gallery: 16 placeholder photos, evenly spaced at one eye level over three walls, aspect ratios preserved (unit-tested), picture lights, prompt + photo viewer with caption and browsing
 - [x] Electric-blue portal in the clear centre of the main wall: brightens on approach, shows the clue, friendly retry + hint, magical open animation, animated love letter

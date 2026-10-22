@@ -87,7 +87,7 @@ export function oakTexture() {
 }
 
 /** Renders text (e.g. the birthday sign) into a texture using the bundled handwriting font. */
-export async function textTexture(text: string, opts: { w?: number; h?: number; font?: string; color?: string; bg?: string; size?: number }) {
+export async function textTexture(text: string, opts: { w?: number; h?: number; font?: string; color?: string; bg?: string; size?: number; stroke?: string; sparkles?: boolean }) {
   const w = opts.w ?? 1024
   const h = opts.h ?? 512
   const family = opts.font ?? 'Caveat'
@@ -112,7 +112,36 @@ export async function textTexture(text: string, opts: { w?: number; h?: number; 
     g.font = `700 ${size}px "${family}", "Segoe Print", cursive`
   }
   const lh = size * 1.05
+  if (opts.stroke) {
+    g.strokeStyle = opts.stroke
+    g.lineWidth = size * 0.14
+    g.lineJoin = 'round'
+    lines.forEach((l, i) => g.strokeText(l, w / 2, h / 2 + (i - (lines.length - 1) / 2) * lh))
+  }
   lines.forEach((l, i) => g.fillText(l, w / 2, h / 2 + (i - (lines.length - 1) / 2) * lh))
+  if (opts.sparkles) {
+    // little four-point stars at both ends (drawn, so no emoji font is needed)
+    const half = Math.max(...lines.map((l) => g.measureText(l).width)) / 2
+    const star = (x: number, y: number, r: number) => {
+      g.beginPath()
+      for (let k = 0; k < 8; k++) {
+        const a = (k / 8) * Math.PI * 2 - Math.PI / 2
+        const rr = k % 2 ? r * 0.28 : r
+        g.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr)
+      }
+      g.closePath()
+      g.fillStyle = '#FFD23F'
+      g.fill()
+      if (opts.stroke) {
+        g.lineWidth = size * 0.05
+        g.stroke()
+      }
+    }
+    for (const side of [-1, 1]) {
+      star(w / 2 + side * (half + size * 0.45), h / 2 - size * 0.12, size * 0.32)
+      star(w / 2 + side * (half + size * 0.85), h / 2 + size * 0.22, size * 0.18)
+    }
+  }
   const t = new THREE.CanvasTexture(c)
   t.colorSpace = THREE.SRGBColorSpace
   t.anisotropy = 4
