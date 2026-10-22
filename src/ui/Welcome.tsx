@@ -7,6 +7,7 @@ import { safeStorage } from '../lib/device'
 import { enterOffline, enterWorld } from '../session'
 import type { Role } from '../types'
 import { CakeMark, Face } from './icons'
+import { SafeForm } from './SafeForm'
 
 const AvatarPreview = lazy(() => import('../world/AvatarPreview'))
 const ls = safeStorage('local')
@@ -49,8 +50,7 @@ export function Welcome() {
 
   const cfg = role ? content.roles[role] : null
 
-  const submitQuestions = (e: React.FormEvent) => {
-    e.preventDefault()
+  const submitQuestions = () => {
     if (!cfg) return
     const w: Record<string, boolean> = {}
     // questions without accepted answers are free-form and may be left empty
@@ -121,7 +121,7 @@ export function Welcome() {
         )}
 
         {step === 'questions' && cfg && (
-          <form onSubmit={submitQuestions} noValidate>
+          <SafeForm onSubmit={submitQuestions}>
             <h2>A few little questions</h2>
             <p className="hint" style={{ marginTop: '-0.4rem' }}>
               Just for fun. Hints appear if something is not quite right.
@@ -173,11 +173,11 @@ export function Welcome() {
               <button type="button" className="btn ghost" onClick={() => setStep('who')}>
                 Back
               </button>
-              <button type="submit" className="btn" data-testid="questions-continue">
+              <button type="button" className="btn" onClick={submitQuestions} data-testid="questions-continue">
                 Continue
               </button>
             </div>
-          </form>
+          </SafeForm>
         )}
 
         {step === 'ready' && cfg && (

@@ -8,6 +8,7 @@ import { room } from '../net/room'
 import { leaveWorld } from '../session'
 import { useStore } from '../state/store'
 import { Icon } from './icons'
+import { SafeForm } from './SafeForm'
 
 const Editor = lazy(() => import('./Editor'))
 
@@ -92,8 +93,7 @@ function PortalDialog() {
   const [flash, setFlash] = useState(false)
   const offline = useStore((s) => s.conn === 'offline' && s.identity?.userId === 'offline')
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const submit = async () => {
     if (!answer.trim() || state.busy) return
     setState((s) => ({ ...s, busy: true, message: undefined }))
     try {
@@ -132,7 +132,7 @@ function PortalDialog() {
           {portal?.clue ?? 'The portal is quiet. It needs a connection to speak.'}
         </p>
         {!offline && portal && (
-          <form onSubmit={submit} className="stack">
+          <SafeForm onSubmit={submit} className="stack">
             <input className="input" autoFocus autoComplete="off" placeholder="Your answer" value={answer} onChange={(e) => setAnswer(e.target.value)} aria-label="Your answer" data-testid="portal-answer" />
             {state.message && (
               <p className="hint" role="status" style={{ margin: 0 }}>
@@ -146,11 +146,11 @@ function PortalDialog() {
               </p>
             )}
             <div className="row">
-              <button className="btn portal" disabled={state.busy || !answer.trim()} data-testid="portal-submit">
+              <button type="button" className="btn portal" onClick={submit} disabled={state.busy || !answer.trim()} data-testid="portal-submit">
                 {state.busy ? 'Listening…' : 'Speak to the portal'}
               </button>
             </div>
-          </form>
+          </SafeForm>
         )}
       </div>
     </Shell>

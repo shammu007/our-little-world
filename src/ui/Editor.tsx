@@ -9,6 +9,7 @@ import { reloadPhotos } from '../session'
 import { useStore } from '../state/store'
 import type { PortalSecret, Wall } from '../types'
 import { Icon } from './icons'
+import { SafeForm } from './SafeForm'
 
 type Draft = PhotoDraft & { preview: string }
 const WALLS: { id: Wall; label: string }[] = [
@@ -21,25 +22,26 @@ function OwnerGate({ onOk }: { onOk: () => void }) {
   const [code, setCode] = useState('')
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
-  return (
-    <form
-      className="stack"
-      onSubmit={async (e) => {
-        e.preventDefault()
-        setBusy(true)
-        setErr('')
-        try {
-          const ok = await (await getBackend()).claimOwner(code)
-          if (ok) {
-            const id = useStore.getState().identity
-            if (id) useStore.getState().setIdentity({ ...id, isOwner: true })
-            onOk()
-          } else setErr('That owner code is not right.')
-        } catch (e2) {
-          setErr((e2 as Error).message)
-        }
+  const unlock = async () => {
+    if (!code || busy) return
+    setBusy(true)
+    setErr('')
+    try {
+      const ok = await (await getBackend()).claimOwner(code)
+      if (ok) {
+        const id = useStore.getState().identity
+        if (id) useStore.getState().setIdentity({ ...id, isOwner: true })
+        onOk()
+      } else setErr('That owner code is not right.')
+    } catch (e2) {
+      setErr((e2 as Error).message)
+    }
         setBusy(false)
-      }}
+  }
+  return (
+    <SafeForm
+      className="stack"
+      onSubmit={unlock}
     >
       <p className="hint" style={{ margin: 0 }}>
         Only the owner can edit photos and the letter. Enter the owner code you set during setup. It is checked on the server and remembered for this browser.
@@ -47,11 +49,11 @@ function OwnerGate({ onOk }: { onOk: () => void }) {
       <input className="input" type="password" autoComplete="off" value={code} onChange={(e) => setCode(e.target.value)} placeholder="Owner code" aria-label="Owner code" />
       {err && <p className="hint warm" style={{ margin: 0 }}>{err}</p>}
       <div className="row">
-        <button className="btn" disabled={busy || !code}>
+        <button type="button" className="btn" disabled={busy || !code} onClick={unlock}>
           Unlock editor
         </button>
       </div>
-    </form>
+    </SafeForm>
   )
 }
 
