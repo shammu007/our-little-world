@@ -71,53 +71,58 @@ function coniferGeo(seed: number) {
   return merge(parts)
 }
 
-function flowerGeo() {
-  const r = rng(11)
+/** A garden rose: stem, two leaves and a layered bloom. */
+function roseGeo() {
+  const r = rng(13)
   const parts: THREE.BufferGeometry[] = []
-  const stem = new THREE.CylinderGeometry(0.009, 0.013, 0.24, 3)
-  stem.translate(0, 0.12, 0)
-  parts.push(paint(stem, '#3F9A32'))
-  for (let i = 0; i < 8; i++) {
-    const p = new THREE.OctahedronGeometry(0.05, 0)
-    p.scale(1, 0.3, 0.45)
-    const a = (i / 8) * Math.PI * 2
-    p.rotateY(-a)
-    p.translate(Math.cos(a) * 0.055, 0.245, Math.sin(a) * 0.055)
-    parts.push(paint(p, PALETTE.flower, 0.03, r))
+  const red = PALETTE.rose
+  const stem = new THREE.CylinderGeometry(0.012, 0.016, 0.42, 4)
+  stem.translate(0, 0.21, 0)
+  parts.push(paint(stem, '#3F8A30'))
+  for (const [side, y] of [[-1, 0.16], [1, 0.26]] as const) {
+    const leaf = new THREE.SphereGeometry(0.05, 6, 4)
+    leaf.scale(1.9, 0.25, 0.9)
+    leaf.translate(side * 0.07, y, 0)
+    parts.push(paint(leaf, '#4CAF3C', 0.05, r))
   }
-  const c = new THREE.SphereGeometry(0.032, 8, 5)
-  c.scale(1, 0.6, 1)
-  c.translate(0, 0.255, 0)
-  parts.push(paint(c, PALETTE.flowerCenter))
+  const sepal = new THREE.ConeGeometry(0.05, 0.06, 5)
+  sepal.rotateX(Math.PI)
+  sepal.translate(0, 0.43, 0)
+  parts.push(paint(sepal, '#3F8A30'))
+  // outer petals open out, inner ones wrap a tight bud
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2
+    const p = new THREE.SphereGeometry(0.06, 6, 4, 0, Math.PI * 2, 0, Math.PI / 2)
+    p.scale(1, 0.55, 0.35)
+    p.rotateX(-1.0)
+    p.rotateY(-a + Math.PI / 2)
+    p.translate(Math.cos(a) * 0.05, 0.47, Math.sin(a) * 0.05)
+    parts.push(paint(p, red, 0.08, r))
+  }
+  for (let i = 0; i < 3; i++) {
+    const a = (i / 3) * Math.PI * 2 + 0.5
+    const p = new THREE.SphereGeometry(0.045, 6, 4, 0, Math.PI * 2, 0, Math.PI / 2)
+    p.scale(1, 0.8, 0.4)
+    p.rotateX(-0.45)
+    p.rotateY(-a + Math.PI / 2)
+    p.translate(Math.cos(a) * 0.022, 0.48, Math.sin(a) * 0.022)
+    parts.push(paint(p, red, 0.08, r))
+  }
+  const bud = new THREE.SphereGeometry(0.03, 6, 5)
+  bud.scale(1, 1.3, 1)
+  bud.translate(0, 0.52, 0)
+  parts.push(paint(bud, '#C8121E'))
   return merge(parts)
 }
 
-/** A tulip: stem, two leaves and a closed cup with three petal tips. */
-function tulipGeo(color: string) {
-  const r = rng(13)
-  const parts: THREE.BufferGeometry[] = []
-  const stem = new THREE.CylinderGeometry(0.01, 0.014, 0.34, 4)
-  stem.translate(0, 0.17, 0)
-  parts.push(paint(stem, '#3F9A32'))
-  for (const side of [-1, 1]) {
-    const leaf = new THREE.SphereGeometry(0.05, 6, 4)
-    leaf.scale(0.45, 2.6, 0.2)
-    leaf.rotateZ(side * 0.32)
-    leaf.translate(side * 0.035, 0.11, 0)
-    parts.push(paint(leaf, '#4CAF3C', 0.05, r))
-  }
-  const cup = new THREE.SphereGeometry(0.06, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.62)
-  cup.rotateX(Math.PI)
-  cup.scale(1, 1.35, 1)
-  cup.translate(0, 0.42, 0)
-  parts.push(paint(cup, color, 0.05, r))
-  for (let i = 0; i < 3; i++) {
-    const a = (i / 3) * Math.PI * 2
-    const tip = new THREE.ConeGeometry(0.036, 0.07, 4)
-    tip.translate(Math.cos(a) * 0.03, 0.44, Math.sin(a) * 0.03)
-    parts.push(paint(tip, color, 0.05, r))
-  }
-  return merge(parts).scale(0.85, 0.85, 0.85)
+/** Two neat rows of roses lining both sides of the paths. */
+function roseRows() {
+  const r = rng(131)
+  const out: Placement[] = []
+  const add = (x: number, z: number) => out.push({ x: x + (r() - 0.5) * 0.08, z: z + (r() - 0.5) * 0.08, s: 0.95 + r() * 0.2, ry: r() * 6.28 })
+  for (let z = GARDEN.plazaRadius + 1.2; z < GARDEN.gateZ - 1; z += 0.5) for (const side of [-1, 1]) add(pathX(z) + side * 1.6, z)
+  for (let z = -GARDEN.plazaRadius - 1.2; z > HALL.frontZ + 1.6; z -= 0.5) for (const side of [-1, 1]) add(side * 1.6, z)
+  return out
 }
 
 function tuftGeo() {
@@ -192,32 +197,6 @@ function scatterTrees(count: number): { deciduous: Placement[][]; conifer: Place
   return { deciduous, conifer }
 }
 
-function scatterFlowers(count: number, seed = 77) {
-  const r = rng(seed)
-  const out: Placement[] = []
-  const centers: [number, number][] = []
-  for (let i = 0; i < 44; i++) {
-    const a = r() * Math.PI * 2
-    const d = 5 + r() * 32
-    centers.push([Math.cos(a) * d, Math.sin(a) * d])
-  }
-  // patches lining the path and the plaza
-  for (let z = 6; z < 34; z += 3.5) centers.push([pathX(z) + (r() > 0.5 ? 2.3 : -2.3), z])
-  for (let i = 0; i < 10; i++) {
-    const a = (i / 10) * Math.PI * 2
-    centers.push([Math.cos(a) * 6.2, Math.sin(a) * 6.2])
-  }
-  let tries = 0
-  while (out.length < count && tries++ < count * 8) {
-    const c = centers[Math.floor(r() * centers.length)]
-    const x = c[0] + (r() - 0.5) * 3.2
-    const z = c[1] + (r() - 0.5) * 3.2
-    if (onPath(x, z, 0.25) || inHouse(x, z) || nearFeature(x, z) || Math.hypot(x, z) > GARDEN.radius - 1.5) continue
-    out.push({ x, z, s: 1.1 + r() * 0.6, ry: r() * 6.28 })
-  }
-  return out
-}
-
 function scatterTufts(count: number) {
   const r = rng(91)
   const out: Placement[] = []
@@ -227,7 +206,7 @@ function scatterTufts(count: number) {
     const d = Math.sqrt(r()) * (GARDEN.radius - 1)
     const x = Math.cos(a) * d
     const z = Math.sin(a) * d
-    if (onPath(x, z, 0.1) || inHouse(x, z, -2.5) || nearFeature(x, z, -0.4)) continue
+    if (onPath(x, z, 0.5) || inHouse(x, z, -2.5) || nearFeature(x, z, -0.4)) continue
     out.push({ x, z, s: 0.7 + r() * 0.9, ry: r() * 6.28 })
   }
   return out
@@ -366,28 +345,21 @@ function windMaterial() {
 
 function Plants({ low }: { low: boolean }) {
   const reduced = useStore((s) => s.settings.reducedMotion)
-  const flowers = useMemo(() => scatterFlowers(low ? 320 : 760), [low])
-  const tulips = useMemo(() => scatterFlowers(low ? 420 : 1000, 131), [low])
-  const tulipLists = useMemo(() => [tulips.filter((_, i) => i % 6 !== 0), tulips.filter((_, i) => i % 6 === 0)], [tulips])
-  const tulipGeos = useMemo(() => [tulipGeo(PALETTE.tulip), tulipGeo(PALETTE.tulipPink)], [])
-  const tulipRefs = [useRef<THREE.InstancedMesh>(null), useRef<THREE.InstancedMesh>(null)]
-  const tufts = useMemo(() => scatterTufts(low ? 700 : 2200), [low])
-  const fGeo = useMemo(() => flowerGeo(), [])
+  const roses = useMemo(() => roseRows(), [])
+  const tufts = useMemo(() => scatterTufts(low ? 450 : 1300), [low])
+  const rGeo = useMemo(() => roseGeo(), [])
   const tGeo = useMemo(() => tuftGeo(), [])
-  const fMat = useMemo(() => windMaterial(), [])
+  const rMat = useMemo(() => windMaterial(), [])
   const tMat = useMemo(() => windMaterial(), [])
-  const fRef = useRef<THREE.InstancedMesh>(null)
+  const rRef = useRef<THREE.InstancedMesh>(null)
   const tRef = useRef<THREE.InstancedMesh>(null)
   useFrame((_, dt) => {
     if (!reduced) windUniform.value += dt
   })
   return (
     <>
-      <instancedMesh ref={instanceRef(fRef, flowers)} args={[fGeo, fMat, flowers.length]} frustumCulled={false} />
+      <instancedMesh ref={instanceRef(rRef, roses)} args={[rGeo, rMat, roses.length]} castShadow frustumCulled={false} />
       <instancedMesh ref={instanceRef(tRef, tufts)} args={[tGeo, tMat, tufts.length]} frustumCulled={false} />
-      {tulipLists.map((list, i) => (
-        <instancedMesh key={i} ref={instanceRef(tulipRefs[i], list)} args={[tulipGeos[i], fMat, list.length]} frustumCulled={false} />
-      ))}
     </>
   )
 }
@@ -564,8 +536,8 @@ function Gate() {
 function Lanterns() {
   const spots = useMemo(() => {
     const out: [number, number][] = []
-    for (const z of [10, 18, 26, 34]) out.push([pathX(z) + (z % 16 === 2 ? 1.9 : -1.9), z])
-    out.push([-2.1, -12], [2.1, -12])
+    for (const z of [10, 18, 26, 34]) out.push([pathX(z) + (z % 16 === 2 ? 2.4 : -2.4), z])
+    out.push([-2.5, -12], [2.5, -12])
     return out
   }, [])
   return (

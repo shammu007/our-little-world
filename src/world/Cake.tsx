@@ -9,6 +9,9 @@ import { merge, paint, rng } from './util'
 import { registerInteractable } from './interactions'
 import { CANDLE_COUNT, PEDESTAL_H, TIERS, candlePositions, tierBase } from '../lib/cake'
 
+/** The whole cake (pedestal, tiers, candles) is drawn at this size. */
+const CAKE_SCALE = 0.75
+
 const SPRINKLES = ['#FF8A3D', '#FF5E8A', '#FFFFFF', '#5BC0F5', '#FFD23F']
 
 function cakeGeometry() {
@@ -266,7 +269,7 @@ function Confetti() {
     for (let i = 0; i < s.count; i++) {
       const a = Math.random() * Math.PI * 2
       const sp = 1.2 + Math.random() * 2.2
-      s.p.set([Math.cos(a) * 0.3, 2.6, Math.sin(a) * 0.3], i * 3)
+      s.p.set([Math.cos(a) * 0.25, 2.6 * CAKE_SCALE, Math.sin(a) * 0.25], i * 3)
       s.v.set([Math.cos(a) * sp, (reduced ? 2 : 3.6) + Math.random() * 2.4, Math.sin(a) * sp], i * 3)
       s.r.set([Math.random() * 6, Math.random() * 6, Math.random() * 6], i * 3)
     }
@@ -385,11 +388,11 @@ function WishText() {
     const m = ref.current
     if (!m) return
     m.quaternion.copy(state.camera.quaternion)
-    m.position.y = 3.75 + (reduced ? 0 : Math.sin(state.clock.elapsedTime * 1.4) * 0.08)
+    m.position.y = 3.05 + (reduced ? 0 : Math.sin(state.clock.elapsedTime * 1.4) * 0.08)
   })
   if (!content.wishText) return null
   return (
-    <mesh ref={ref} material={mat} position={[0, 3.75, 0]} renderOrder={5}>
+    <mesh ref={ref} material={mat} position={[0, 3.05, 0]} renderOrder={5}>
       <planeGeometry args={[5.2, 0.85]} />
     </mesh>
   )
@@ -410,15 +413,17 @@ export function Cake() {
   )
   return (
     <group>
-      <mesh geometry={geo} castShadow receiveShadow>
-        <meshLambertMaterial vertexColors />
-      </mesh>
-      <Candles />
+      <group scale={CAKE_SCALE}>
+        <mesh geometry={geo} castShadow receiveShadow>
+          <meshLambertMaterial vertexColors />
+        </mesh>
+        <Candles />
+      </group>
       <Confetti />
       <Sign />
       <WishText />
       <RigidBody type="fixed" colliders={false}>
-        <CylinderCollider args={[1.2, 1.75]} position={[0, 1.2, 0]} />
+        <CylinderCollider args={[1.2 * CAKE_SCALE, 1.75 * CAKE_SCALE]} position={[0, 1.2 * CAKE_SCALE, 0]} />
       </RigidBody>
     </group>
   )

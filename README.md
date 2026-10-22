@@ -1,6 +1,6 @@
 # Our Little World
 
-A small, cozy 3D birthday world for two people. Walk through a bright tulip garden with a stone fountain and a heart tree to a colourful three-tier cake with 25 candles, read the "happy 25! sweetheart" sign, visit a white gallery hall with framed photos, and answer the riddle at the glowing blue portal to unlock a love letter. Two devices can explore together in real time.
+A small, cozy 3D birthday world for two people. Walk along a rose-lined path through a bright garden with a stone fountain and a heart tree to a colourful three-tier cake with 25 candles, read the "happy 25! sweetheart" sign, visit a white gallery hall with framed photos, and answer the riddle at the glowing blue portal to unlock a love letter. Two devices can explore together in real time.
 
 Built with React, TypeScript, Vite, React Three Fiber, Drei, Rapier, Zustand and Supabase (anonymous auth, Postgres + RLS, private Storage, Realtime Presence/Broadcast). Deploys to Vercel as a static SPA.
 
