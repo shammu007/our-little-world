@@ -53,11 +53,19 @@ export function Welcome() {
     e.preventDefault()
     if (!cfg) return
     const w: Record<string, boolean> = {}
-    for (const q of cfg.questions) if (!answerMatches(answers[q.id] ?? '', q.acceptedAnswers)) w[q.id] = true
+    // questions without accepted answers are free-form and may be left empty
+    for (const q of cfg.questions) if (q.acceptedAnswers.length && !answerMatches(answers[q.id] ?? '', q.acceptedAnswers)) w[q.id] = true
     if (codeRequired && !code.trim()) w.__code = true
     setWrong(w)
     if (Object.keys(w).length) {
       setShake((n) => n + 1)
+      // make sure the hint is seen, even on a small phone screen
+      const first = cfg.questions.find((q) => w[q.id])?.id ?? 'access-code'
+      window.setTimeout(() => {
+        const el = document.getElementById(first) as HTMLInputElement | null
+        el?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+        el?.focus()
+      }, 50)
       return
     }
     ls?.setItem(`olw.passed.${role}`, '1')
@@ -119,6 +127,11 @@ export function Welcome() {
               Just for fun. Hints appear if something is not quite right.
             </p>
             {error && <div className="error-box">{error.message}</div>}
+            {Object.keys(wrong).length > 0 && !error && (
+              <div className="error-box" role="alert" data-testid="questions-error">
+                One answer is not quite right yet. Look for the hint in red below.
+              </div>
+            )}
             <div className={`q-list ${shake ? 'shake' : ''}`} key={shake}>
               {cfg.questions.map((q, i) => (
                 <div className="field" key={q.id}>
