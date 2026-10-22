@@ -69,7 +69,8 @@ async function decodePhoto(src: string): Promise<{ source: CanvasImageSource; w:
   let last: unknown
   for (const attempt of attempts) {
     try {
-      return await attempt()
+      // a stuck decode would otherwise leave the frame blank forever
+      return await Promise.race([attempt(), new Promise<never>((_, rej) => setTimeout(() => rej(new Error('photo decode timed out')), 15000))])
     } catch (e) {
       last = e
     }
