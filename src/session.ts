@@ -1,4 +1,4 @@
-import { content, placeholderPhotos } from './content/content'
+import { content, defaultPhotos, placeholderPhotos } from './content/content'
 import { getBackend } from './backend'
 import type { JoinResult } from './backend/types'
 import { initAudio, startAmbience } from './lib/audio'
@@ -37,7 +37,7 @@ export async function enterWorld(role: Role, accessCode?: string): Promise<JoinR
 
   const [photos, portal] = await Promise.allSettled([backend.loadPhotos(), backend.getPortalPublic()])
   useStore.setState({
-    photos: photos.status === 'fulfilled' ? photos.value : placeholderPhotos,
+    photos: photos.status === 'fulfilled' ? photos.value : await defaultPhotos(),
     portal: portal.status === 'fulfilled' ? portal.value : null,
   })
   if (photos.status === 'rejected') s.toast('The photos could not be loaded, showing examples for now.', 'warn')

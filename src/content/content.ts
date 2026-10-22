@@ -11,6 +11,8 @@ import type { Photo, WorldContent } from '../types'
 
 // Bundled through Vite so they also work in the single-file build opened straight from disk.
 const bundled = import.meta.glob('./placeholders/*.svg', { query: '?url', import: 'default', eager: true }) as Record<string, string>
+// Your own photos: drop .jpg / .png / .webp files into src/content/photos/ (see the README there).
+const ownPhotos = import.meta.glob('./photos/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}', { query: '?url', import: 'default', eager: true }) as Record<string, string>
 
 export const content: WorldContent = {
   title: 'Our Little World',
@@ -92,9 +94,38 @@ function bundlePath(i: number) {
   return `bundle:placeholders/memory-${String(i + 1).padStart(2, '0')}.svg`
 }
 
-/** Resolves a "bundle:" storage path (an asset shipped in /public) to a URL. */
+/** Resolves a "bundle:" storage path (an image shipped inside the app) to a URL. */
 export function resolveBundled(path: string) {
-  const file = path.replace(/^bundle:placeholders\//, '')
-  return bundled[`./placeholders/${file}`] ?? ''
+  const rel = path.replace(/^bundle:/, './')
+  return bundled[rel] ?? ownPhotos[rel] ?? ''
+}
+
+export const isExamplePath = (storagePath?: string) => Boolean(storagePath?.startsWith('bundle:placeholders/'))
+
+function measure(src: string): Promise<number> {
+  return new Promise((res) => {
+    const img = new Image()
+    img.onload = () => res(img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : 1.5)
+    img.onerror = () => res(1.5)
+    img.src = src
+  })
+}
+
+let ownGallery: Promise<Photo[]> | null = null
+/**
+ * The gallery shown until photos are saved in the editor: your own photos from
+ * src/content/photos/ (sorted by file name; the first two go on the main wall, the rest
+ * alternate left and right), or the example pictures when that folder is empty.
+ */
+export function defaultPhotos(): Promise<Photo[]> {
+  const files = Object.keys(ownPhotos).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })).slice(0, 24)
+  if (!files.length) return Promise.resolve(placeholderPhotos)
+  ownGallery ??= Promise.all(
+    files.map(async (rel, i): Promise<Photo> => {
+      const wall: Photo['wall'] = i < 2 ? 'back' : i % 2 === 0 ? 'left' : 'right'
+      return { id: `own-${i + 1}`, src: ownPhotos[rel], storagePath: `bundle:${rel.slice(2)}`, caption: '', wall, order: i, aspect: await measure(ownPhotos[rel]) }
+    }),
+  )
+  return ownGallery
 }
 

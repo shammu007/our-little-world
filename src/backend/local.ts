@@ -1,4 +1,4 @@
-import { content, placeholderPhotos, resolveBundled } from '../content/content'
+import { content, defaultPhotos, isExamplePath, resolveBundled } from '../content/content'
 import { answerMatches } from '../lib/normalize'
 import { idb } from '../lib/idb'
 import { blobToDataUrl } from '../lib/image'
@@ -88,7 +88,7 @@ export class LocalBackend implements Backend {
 
   async loadPhotos(): Promise<Photo[]> {
     const saved = this.memPhotos ?? read<PhotoDraft[]>(K.photos)
-    if (!saved || !saved.length) return placeholderPhotos
+    if (!saved || !saved.length) return defaultPhotos()
     const out: Photo[] = []
     for (const d of saved) {
       let src = d.storagePath.startsWith('bundle:') ? resolveBundled(d.storagePath) : d.storagePath
@@ -97,7 +97,7 @@ export class LocalBackend implements Backend {
         if (!blob) continue
         src = await blobToDataUrl(blob)
       }
-      out.push({ id: d.id, src, caption: d.caption, wall: d.wall, order: d.order, aspect: d.aspect, storagePath: d.storagePath, placeholder: !d.storagePath.startsWith('idb:') })
+      out.push({ id: d.id, src, caption: d.caption, wall: d.wall, order: d.order, aspect: d.aspect, storagePath: d.storagePath, placeholder: isExamplePath(d.storagePath) })
     }
     return out
   }

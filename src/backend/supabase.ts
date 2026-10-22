@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import { placeholderPhotos, resolveBundled } from '../content/content'
+import { defaultPhotos, isExamplePath, resolveBundled } from '../content/content'
 import { uid } from '../lib/device'
 import { SupabaseTransport } from '../net/supabaseTransport'
 import type { Letter, Photo, PortalSecret, Role, Wall } from '../types'
@@ -88,7 +88,7 @@ export class SupabaseBackend implements Backend {
     const { data, error } = await this.sb.from('photos').select('id,storage_path,caption,wall,sort_order,aspect').order('sort_order')
     if (error) throw new Error(friendly(error))
     const rows = (data ?? []) as PhotoRow[]
-    if (!rows.length) return placeholderPhotos
+    if (!rows.length) return defaultPhotos()
     const storagePaths = rows.map((r) => r.storage_path).filter((p) => !p.startsWith('bundle:'))
     const signed = new Map<string, string>()
     if (storagePaths.length) {
@@ -105,7 +105,7 @@ export class SupabaseBackend implements Backend {
         order: r.sort_order,
         aspect: r.aspect,
         storagePath: r.storage_path,
-        placeholder: r.storage_path.startsWith('bundle:'),
+        placeholder: isExamplePath(r.storage_path),
       }))
       .filter((p) => p.src)
   }

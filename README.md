@@ -26,7 +26,7 @@ Follow **[docs/SETUP.md](docs/SETUP.md)**: create a Supabase project, run one SQ
 | What | Where |
 | --- | --- |
 | Welcome text, sign text, floating wish text, entrance questions, avatar colours | `src/content/content.ts` (public, ships in the bundle) |
-| Photos, captions, order, wall | In game: pencil button → **Photos** (owner only) |
+| Photos, captions, order, wall | Drop photos into `src/content/photos/` (see the README there), or in game: pencil button → **Photos** (owner only) |
 | Portal clue, hint, accepted answers, love letter | In game: pencil button → **Portal & letter** (owner only, stored on the server) |
 | Shared entrance access code | In game: pencil button → **Access code**, or `supabase/setup_codes.sql` |
 

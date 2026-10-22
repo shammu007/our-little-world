@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getBackend } from '../backend'
 import type { PhotoDraft } from '../backend/types'
-import { resolveBundled } from '../content/content'
+import { isExamplePath, resolveBundled } from '../content/content'
 import { prepareImage } from '../lib/image'
 import { GALLERY_LIMITS, MAIN_WALL } from '../lib/layout'
 import { uid } from '../lib/device'
@@ -61,7 +61,7 @@ function PhotosTab() {
   const photos = useStore((s) => s.photos)
   const toast = useStore((s) => s.toast)
   const [drafts, setDrafts] = useState<Draft[]>(() =>
-    photos.map((p) => ({ id: p.id.startsWith('placeholder-') ? uid() : p.id, caption: p.caption, wall: p.wall, order: p.order, aspect: p.aspect, storagePath: p.storagePath ?? '', preview: p.src })),
+    photos.map((p) => ({ id: p.id.startsWith('placeholder-') || p.id.startsWith('own-') ? uid() : p.id, caption: p.caption, wall: p.wall, order: p.order, aspect: p.aspect, storagePath: p.storagePath ?? '', preview: p.src })),
   )
   const [removed, setRemoved] = useState<string[]>([])
   const [busy, setBusy] = useState<string | null>(null)
@@ -120,7 +120,7 @@ function PhotosTab() {
       setBusy(`Adding ${file.name}…`)
       try {
         const img = await prepareImage(file)
-        const example = WALLS.map((w) => byWallOf(list, w.id).find((d) => d.storagePath.startsWith('bundle:')))
+        const example = WALLS.map((w) => byWallOf(list, w.id).find((d) => isExamplePath(d.storagePath)))
           .sort((x, y) => (x?.wall === 'back' ? -1 : 0) - (y?.wall === 'back' ? -1 : 0))
           .find(Boolean)
         if (!example && list.length >= GALLERY_LIMITS.hardMax) {
@@ -204,7 +204,7 @@ function PhotosTab() {
                         </option>
                       ))}
                     </select>
-                    {d.storagePath.startsWith('bundle:') && <span className="badge warn">example</span>}
+                    {isExamplePath(d.storagePath) && <span className="badge warn">example</span>}
                   </div>
                 </div>
                 <div className="ops">
