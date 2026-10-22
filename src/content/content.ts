@@ -75,7 +75,7 @@ export const content: WorldContent = {
 
 /** Example gallery shown until real photos are uploaded through the owner editor. */
 const placeholderAspects = [1.5, 0.75, 1, 1.3325, 0.8, 1.7775, 1.5, 0.6675, 1.25, 1, 1.5, 0.75, 1.3325, 1.5, 0.8, 1.5]
-const walls: Photo['wall'][] = ['left', 'left', 'left', 'left', 'left', 'left', 'back', 'back', 'back', 'back', 'right', 'right', 'right', 'right', 'right', 'right']
+const walls: Photo['wall'][] = ['left', 'left', 'left', 'left', 'left', 'left', 'left', 'back', 'back', 'right', 'right', 'right', 'right', 'right', 'right', 'right']
 
 export const placeholderPhotos: Photo[] = placeholderAspects.map((aspect, i) => ({
   id: `placeholder-${i + 1}`,

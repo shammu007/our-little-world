@@ -3,7 +3,7 @@ import { getBackend } from '../backend'
 import type { PhotoDraft } from '../backend/types'
 import { resolveBundled } from '../content/content'
 import { prepareImage } from '../lib/image'
-import { GALLERY_LIMITS } from '../lib/layout'
+import { GALLERY_LIMITS, MAIN_WALL } from '../lib/layout'
 import { uid } from '../lib/device'
 import { reloadPhotos } from '../session'
 import { useStore } from '../state/store'
@@ -93,23 +93,59 @@ function PhotosTab() {
     setDrafts((ds) => renumber(ds.filter((x) => x.id !== d.id)))
   }
 
-  const upload = async (files: FileList | null) => {
-    if (!files?.length) return
+  /** Saves the given list straight away and refreshes the hall. */
+  const persist = async (list: Draft[], rem: string[], done: string) => {
     const backend = await getBackend()
-    for (const file of Array.from(files)) {
-      if (drafts.length >= GALLERY_LIMITS.hardMax) {
-        toast(`The hall fits at most ${GALLERY_LIMITS.hardMax} photos.`, 'warn')
-        break
-      }
-      setBusy(`Uploading ${file.name}…`)
+    await backend.savePhotos(
+      list.map(({ preview: _p, ...d }) => d),
+      rem,
+    )
+    await reloadPhotos()
+    setDirty(false)
+    setRemoved([])
+    toast(done)
+    if (backend.storageWarning) toast(backend.storageWarning, 'warn')
+  }
+
+  /**
+   * New photos take the place of the example pictures first (main wall, then the side walls),
+   * so they show up right away; once no examples are left they go to the emptier side wall.
+   */
+  const upload = async (files: File[]) => {
+    if (!files.length) return
+    const backend = await getBackend()
+    let list = drafts
+    let added = 0
+    for (const file of files) {
+      setBusy(`Adding ${file.name}…`)
       try {
         const img = await prepareImage(file)
+        const example = WALLS.map((w) => byWallOf(list, w.id).find((d) => d.storagePath.startsWith('bundle:')))
+          .sort((x, y) => (x?.wall === 'back' ? -1 : 0) - (y?.wall === 'back' ? -1 : 0))
+          .find(Boolean)
+        if (!example && list.length >= GALLERY_LIMITS.hardMax) {
+          toast(`The hall fits at most ${GALLERY_LIMITS.hardMax} photos. Remove one first.`, 'warn')
+          break
+        }
         const { storagePath, previewUrl } = await backend.uploadPhoto(img.blob)
-        const counts = WALLS.map((w) => byWall(w.id).length)
-        const wall = WALLS[counts.indexOf(Math.min(...counts))].id
-        setDrafts((ds) => renumber([...ds, { id: uid(), caption: '', wall, order: 999, aspect: img.aspect, storagePath, preview: previewUrl, isNew: true }]))
-        setDirty(true)
+        const fresh: Draft = { id: uid(), caption: '', wall: 'left', order: 999, aspect: img.aspect, storagePath, preview: previewUrl, isNew: true }
+        if (example) list = list.map((d) => (d.id === example.id ? { ...fresh, wall: d.wall, order: d.order } : d))
+        else {
+          const side = byWallOf(list, 'left').length <= byWallOf(list, 'right').length ? 'left' : 'right'
+          list = renumber([...list, { ...fresh, wall: side }])
+        }
+        added++
       } catch (e) {
+        toast((e as Error).message, 'warn')
+      }
+    }
+    setDrafts(list)
+    if (added) {
+      setBusy('Saving…')
+      try {
+        await persist(list, removed, added === 1 ? 'Photo added to the hall' : `${added} photos added to the hall`)
+      } catch (e) {
+        setDirty(true)
         toast((e as Error).message, 'warn')
       }
     }
@@ -119,15 +155,7 @@ function PhotosTab() {
   const save = async () => {
     setBusy('Saving…')
     try {
-      const backend = await getBackend()
-      await backend.savePhotos(
-        drafts.map(({ preview: _p, ...d }) => d),
-        removed,
-      )
-      await reloadPhotos()
-      setDirty(false)
-      setRemoved([])
-      toast('Gallery saved')
+      await persist(drafts, removed, 'Gallery saved')
     } catch (e) {
       toast((e as Error).message, 'warn')
     }
@@ -143,13 +171,24 @@ function PhotosTab() {
         </span>
         <label className="btn small" style={{ display: 'inline-flex', alignItems: 'center' }}>
           Upload photos
-          <input type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onChange={(e) => upload(e.target.files)} data-testid="upload-input" />
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            hidden
+            onChange={(e) => {
+              // copy first: clearing the input empties its live FileList
+              upload(Array.from(e.target.files ?? []))
+              e.target.value = ''
+            }}
+            data-testid="upload-input"
+          />
         </label>
       </div>
       {WALLS.map((w) => (
         <section key={w.id} style={{ marginBottom: '1rem' }}>
           <h3 style={{ margin: '0.4rem 0', fontSize: '1rem' }}>
-            {w.label} <span className="hint">({byWall(w.id).length}{w.id === 'back' ? ', split around the portal' : ''})</span>
+            {w.label} <span className="hint">({w.id === 'back' ? `${byWall(w.id).length} of ${MAIN_WALL.max}, one on each side of the portal` : byWall(w.id).length})</span>
           </h3>
           <div className="photo-rows">
             {byWall(w.id).map((d, i, list) => (
@@ -160,7 +199,7 @@ function PhotosTab() {
                   <div className="line">
                     <select className="input" style={{ width: 'auto' }} value={d.wall} aria-label="Wall" onChange={(e) => update(d.id, { wall: e.target.value as Wall })}>
                       {WALLS.map((x) => (
-                        <option key={x.id} value={x.id}>
+                        <option key={x.id} value={x.id} disabled={x.id === 'back' && d.wall !== 'back' && byWall('back').length >= MAIN_WALL.max}>
                           {x.label}
                         </option>
                       ))}

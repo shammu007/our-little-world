@@ -7,7 +7,7 @@ const mk = (n: number, wall: Photo['wall'], aspect = 1.5): Photo[] =>
 
 describe('layoutGallery', () => {
   it('keeps every frame at eye level and preserves aspect ratio', () => {
-    const photos = [...mk(6, 'left', 0.75), ...mk(4, 'back', 1.78), ...mk(6, 'right', 1)]
+    const photos = [...mk(7, 'left', 0.75), ...mk(2, 'back', 1.78), ...mk(7, 'right', 1)]
     const l = layoutGallery(photos)
     expect(l).toHaveLength(16)
     for (const f of l) {
@@ -15,12 +15,22 @@ describe('layoutGallery', () => {
       expect(f.width / f.height).toBeCloseTo(f.photo.aspect, 3)
     }
   })
-  it('spaces frames evenly without overlap and keeps the portal area clear', () => {
-    const l = layoutGallery(mk(8, 'back', 1.5))
-    for (const f of l) expect(Math.abs(f.position[0]) - f.width / 2).toBeGreaterThan(HALL.portalClear / 2 - 0.01)
-    const left = l.filter((f) => f.position[0] < 0).sort((a, b) => a.position[0] - b.position[0])
-    for (let i = 1; i < left.length; i++) {
-      const gap = left[i].position[0] - left[i].width / 2 - (left[i - 1].position[0] + left[i - 1].width / 2)
+  it('shows one medium photo on each side of the portal and moves extras to the side walls', () => {
+    const l = layoutGallery([...mk(5, 'back', 1.5), ...mk(2, 'left', 1.5)])
+    expect(l).toHaveLength(7)
+    const back = l.filter((f) => f.photo.wall === 'back' && f.rotationY === 0)
+    expect(back).toHaveLength(2)
+    expect(back[0].position[0]).toBeLessThan(0)
+    expect(back[1].position[0]).toBeGreaterThan(0)
+    for (const f of back) {
+      expect(Math.abs(f.position[0]) - f.width / 2).toBeGreaterThan(HALL.portalClear / 2 - 0.01)
+      expect(f.height).toBeGreaterThan(FRAME.baseHeight)
+    }
+  })
+  it('spaces side-wall frames evenly without overlap', () => {
+    const l = layoutGallery(mk(8, 'left', 1.5)).sort((a, b) => b.position[2] - a.position[2])
+    for (let i = 1; i < l.length; i++) {
+      const gap = l[i - 1].position[2] - l[i - 1].width / 2 - (l[i].position[2] + l[i].width / 2)
       expect(gap).toBeGreaterThan(FRAME.minGap)
     }
   })

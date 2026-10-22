@@ -43,6 +43,7 @@ export const state = (page: Page) =>
       pos: w.__olw.live.playerPos as [number, number, number],
       cam: w.__olw.live.cameraPos as [number, number, number],
       photos: (s.photos as { caption: string }[]).map((p) => p.caption),
+      uploaded: (s.photos as { wall: string; placeholder?: boolean }[]).filter((p) => !p.placeholder).map((p) => p.wall),
     }
   })
 

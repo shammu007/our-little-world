@@ -1,6 +1,7 @@
 import { content, placeholderPhotos, resolveBundled } from '../content/content'
 import { answerMatches } from '../lib/normalize'
 import { idb } from '../lib/idb'
+import { blobToDataUrl } from '../lib/image'
 import { safeStorage, uid } from '../lib/device'
 import { LocalTransport } from '../net/localTransport'
 import type { Photo, PortalSecret, Role } from '../types'
@@ -22,13 +23,17 @@ const read = <T,>(k: string): T | null => {
     return null
   }
 }
+/** Returns false when the browser blocks storage (private mode, sandboxed previews). */
 const write = (k: string, v: unknown) => {
   try {
-    store?.setItem(k, JSON.stringify(v))
+    if (!store) return false
+    store.setItem(k, JSON.stringify(v))
+    return true
   } catch {
-    throw new Error('This browser blocked local storage, so demo edits cannot be saved.')
+    return false
   }
 }
+const TEMP_NOTE = 'This browser is blocking storage here, so your photos show now but will be gone after closing the page. Open the file directly in Chrome, Edge or Safari to keep them.'
 
 /**
  * Offline demo backend. Everything lives in this browser (localStorage + IndexedDB),
@@ -38,7 +43,11 @@ const write = (k: string, v: unknown) => {
 export class LocalBackend implements Backend {
   readonly mode = 'demo' as const
   private role: Role = 'me'
-  private objectUrls: string[] = []
+  /** Fallbacks used when localStorage / IndexedDB are blocked: edits last for this page visit. */
+  private memPhotos: PhotoDraft[] | null = null
+  private memBlobs = new Map<string, Blob>()
+  private memPortal: PortalSecret | null = null
+  storageWarning: string | null = null
   private attempts: number[] = []
 
   async init(role: Role) {
@@ -52,7 +61,7 @@ export class LocalBackend implements Backend {
   }
 
   private async demoPortal(): Promise<PortalSecret> {
-    const saved = read<PortalSecret>(K.portal)
+    const saved = this.memPortal ?? read<PortalSecret>(K.portal)
     if (saved) return saved
     const { demoPortal } = await import('../content/demoSecrets')
     return demoPortal
@@ -78,18 +87,15 @@ export class LocalBackend implements Backend {
   async leave() {}
 
   async loadPhotos(): Promise<Photo[]> {
-    const saved = read<PhotoDraft[]>(K.photos)
+    const saved = this.memPhotos ?? read<PhotoDraft[]>(K.photos)
     if (!saved || !saved.length) return placeholderPhotos
-    this.objectUrls.forEach((u) => URL.revokeObjectURL(u))
-    this.objectUrls = []
     const out: Photo[] = []
     for (const d of saved) {
       let src = d.storagePath.startsWith('bundle:') ? resolveBundled(d.storagePath) : d.storagePath
       if (d.storagePath.startsWith('idb:')) {
-        const blob = await idb.get(d.storagePath).catch(() => undefined)
+        const blob = this.memBlobs.get(d.storagePath) ?? (await idb.get(d.storagePath).catch(() => undefined))
         if (!blob) continue
-        src = URL.createObjectURL(blob)
-        this.objectUrls.push(src)
+        src = await blobToDataUrl(blob)
       }
       out.push({ id: d.id, src, caption: d.caption, wall: d.wall, order: d.order, aspect: d.aspect, storagePath: d.storagePath, placeholder: !d.storagePath.startsWith('idb:') })
     }
@@ -120,22 +126,31 @@ export class LocalBackend implements Backend {
 
   async uploadPhoto(blob: Blob) {
     const key = `idb:${uid()}`
-    await idb.put(key, blob)
-    const previewUrl = URL.createObjectURL(blob)
-    this.objectUrls.push(previewUrl)
+    try {
+      await idb.put(key, blob)
+    } catch {
+      this.storageWarning = TEMP_NOTE
+    }
+    this.memBlobs.set(key, blob)
+    const previewUrl = await blobToDataUrl(blob)
     return { storagePath: key, previewUrl }
   }
 
   async savePhotos(photos: PhotoDraft[], removed: string[]) {
-    write(K.photos, photos)
-    for (const p of removed) if (p.startsWith('idb:')) await idb.del(p).catch(() => undefined)
+    this.memPhotos = photos
+    if (!write(K.photos, photos)) this.storageWarning = TEMP_NOTE
+    for (const p of removed) {
+      this.memBlobs.delete(p)
+      if (p.startsWith('idb:')) await idb.del(p).catch(() => undefined)
+    }
   }
 
   async getPortalSecret() {
     return structuredClone(await this.demoPortal())
   }
   async savePortalSecret(secret: PortalSecret) {
-    write(K.portal, secret)
+    this.memPortal = secret
+    if (!write(K.portal, secret)) this.storageWarning = TEMP_NOTE
   }
   async setAccessCode(code: string | null) {
     if (code) store?.setItem(K.code, code)

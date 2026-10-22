@@ -115,10 +115,11 @@ test('owner editor: change a caption and wall, save, and see it in the world', a
     return c.toDataURL('image/png').split(',')[1]
   })
   await page.getByTestId('upload-input').setInputFiles({ name: 'new.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') })
-  await expect(editor.locator('.photo-row')).toHaveCount(17)
-  await page.getByTestId('save-photos').click()
-  await expect.poll(async () => (await state(page)).photos.length).toBe(17)
+  // it replaces the first example photo (on the main wall) and is saved straight away
+  await expect.poll(async () => (await state(page)).uploaded).toEqual(['back'])
+  await expect(editor.locator('.photo-row')).toHaveCount(16)
   await page.reload()
   await enter(page, 'me')
-  await expect.poll(async () => (await state(page)).photos.length).toBe(17)
+  await expect.poll(async () => (await state(page)).uploaded).toEqual(['back'])
+  await expect.poll(async () => (await state(page)).photos.length).toBe(16)
 })

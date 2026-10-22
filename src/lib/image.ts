@@ -1,6 +1,6 @@
 /** Reads an image file, downsizes it for the web (max 2048px), and returns a JPEG/WebP blob plus its aspect ratio. */
 export async function prepareImage(file: File, maxSize = 2048): Promise<{ blob: Blob; aspect: number; width: number; height: number }> {
-  if (!/^image\/(jpeg|png|webp|gif|avif)$/.test(file.type)) throw new Error('Please choose a JPEG, PNG or WebP image.')
+  if (file.type && !file.type.startsWith('image/')) throw new Error(`"${file.name}" is not a picture. Please choose a JPEG, PNG or WebP image.`)
   if (file.size > 30 * 1024 * 1024) throw new Error('That image is larger than 30 MB.')
   const bitmap = await loadBitmap(file)
   const { width: w0, height: h0 } = bitmap
@@ -30,7 +30,20 @@ async function loadBitmap(file: File): Promise<ImageBitmap | HTMLImageElement> {
   return new Promise((res, rej) => {
     const img = new Image()
     img.onload = () => res(img)
-    img.onerror = () => rej(new Error('Could not read that image.'))
-    img.src = URL.createObjectURL(file)
+    img.onerror = () => rej(new Error(`This browser could not open "${file.name}". Try a JPEG or PNG (iPhone HEIC photos may need converting first).`))
+    blobToDataUrl(file).then((u) => (img.src = u), rej)
+  })
+}
+
+/**
+ * Data URLs instead of blob: URLs, because blob URLs fail to load in pages opened from disk
+ * inside sandboxed previews, and break once revoked.
+ */
+export function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((res, rej) => {
+    const r = new FileReader()
+    r.onload = () => res(r.result as string)
+    r.onerror = () => rej(new Error('Could not read that image.'))
+    r.readAsDataURL(blob)
   })
 }

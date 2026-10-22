@@ -37,6 +37,8 @@ export interface Backend {
   isOwner(): Promise<boolean>
   uploadPhoto(blob: Blob): Promise<{ storagePath: string; previewUrl: string }>
   savePhotos(photos: PhotoDraft[], removedStoragePaths: string[]): Promise<void>
+  /** Set when edits only last until the page is closed (browser storage is blocked). */
+  readonly storageWarning?: string | null
   getPortalSecret(): Promise<PortalSecret>
   savePortalSecret(secret: PortalSecret): Promise<void>
   setAccessCode(code: string | null): Promise<void>
