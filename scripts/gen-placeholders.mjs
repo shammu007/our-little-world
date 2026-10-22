@@ -3,7 +3,7 @@
 // Run: node scripts/gen-placeholders.mjs
 import { mkdirSync, writeFileSync } from 'node:fs'
 
-const out = new URL('../public/placeholders/', import.meta.url)
+const out = new URL('../src/content/placeholders/', import.meta.url)
 mkdirSync(out, { recursive: true })
 
 let seed = 7

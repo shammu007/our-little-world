@@ -13,6 +13,10 @@ npm run dev          # http://localhost:5173
 
 Without Supabase variables the app runs in **demo mode**: content and edits live in this browser (localStorage + IndexedDB), and two tabs of the same browser act as two players. Demo mode is for trying things out; nothing in it is private.
 
+## Just want to look? (no install)
+
+`npm run build:standalone` writes `standalone/index.html`: one self-contained file you can double-click to open in Chrome, Edge, Firefox or Safari. It runs the demo with example content. (The normal `dist/` build needs a web server, so double-clicking `dist/index.html` shows a blank page.)
+
 ## Real setup (protected letter, private photos, two devices)
 
 Follow **[docs/SETUP.md](docs/SETUP.md)**: create a Supabase project, run one SQL file, set your owner code, add two environment variables, push to GitHub and import into Vercel. About 15 minutes.

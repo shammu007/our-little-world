@@ -9,6 +9,9 @@
  */
 import type { Photo, WorldContent } from '../types'
 
+// Bundled through Vite so they also work in the single-file build opened straight from disk.
+const bundled = import.meta.glob('./placeholders/*.svg', { query: '?url', import: 'default', eager: true }) as Record<string, string>
+
 export const content: WorldContent = {
   title: 'Our Little World',
   welcomeLine: 'A tiny garden, a cake, and a few memories. Made just for you.',
@@ -90,5 +93,7 @@ function bundlePath(i: number) {
 
 /** Resolves a "bundle:" storage path (an asset shipped in /public) to a URL. */
 export function resolveBundled(path: string) {
-  return import.meta.env.BASE_URL + path.replace(/^bundle:/, '')
+  const file = path.replace(/^bundle:placeholders\//, '')
+  return bundled[`./placeholders/${file}`] ?? ''
 }
+
