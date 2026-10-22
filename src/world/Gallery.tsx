@@ -143,7 +143,9 @@ function Frame({ f, maxTex }: { f: FramePlacement; maxTex: number }) {
       </mesh>
       <mesh position={[0, 0, 0.036]}>
         <planeGeometry args={[f.width, f.height]} />
-        {tex ? <meshBasicMaterial map={tex} color={'#F7F5F0'} /> : <meshBasicMaterial color={'#EDEAE3'} />}
+        {/* keyed so the photo gets a fresh material: adding a map to an already-compiled
+            material would keep its old map-less shader and the frame would stay blank */}
+        {tex ? <meshBasicMaterial key={tex.uuid} map={tex} color={'#F7F5F0'} /> : <meshBasicMaterial key="blank" color={'#EDEAE3'} />}
       </mesh>
       {/* brass picture lamp */}
       <group position={[0, f.height / 2 + b + 0.16, 0.09]}>
